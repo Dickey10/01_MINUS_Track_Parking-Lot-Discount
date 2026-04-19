@@ -1,0 +1,6 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+playwright==1.48.0
+pydantic-settings==2.4.0
+gspread==6.1.2
+google-auth==2.34.0
