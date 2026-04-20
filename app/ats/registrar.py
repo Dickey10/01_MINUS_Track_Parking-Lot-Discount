@@ -3,15 +3,14 @@ ATS 주차 할인권 자동 등록 클래스.
 
 확인된 흐름:
   1. 로그인 (storage_state 재사용, 만료 시 재로그인)
-  2. 할인 > 할인등록 메뉴 이동
-  3. 검색 버튼 클릭 → 입차 차량 목록 표시
-  4. 차량번호로 해당 행 선택         ← ⚠️ TODO
-  5. 30분권 / 60분권 선택            ← ⚠️ TODO
-  6. 등록 확인                        ← ⚠️ TODO
+  2. /discount/registration 직접 이동
+  3. 차량번호 입력 → 검색
+  4. dhtmlXGrid JS로 해당 행 선택 (XgridMst.selectRow)
+  5. #div_dscntcodes 에 동적 생성된 할인 버튼 클릭 → fncSave() 자동 호출
+  6. "등록되었습니다." 모달 확인
 """
 
 import re
-import os
 from datetime import datetime
 from pathlib import Path
 from playwright.async_api import async_playwright, Page, BrowserContext
@@ -109,34 +108,71 @@ class ATSRegistrar:
     ) -> RegisterResponse:
         """할인 등록 메인 로직."""
 
-        # 할인등록 메뉴 이동 (✅ Codegen 확인됨)
-        await page.get_by_text(sel.DISCOUNT_MENU).click()
+        # 할인등록 페이지 직접 이동 (✅ URL 확인됨)
+        await page.goto(f"{settings.ats_url}{sel.DISCOUNT_URL}")
         await page.wait_for_load_state("networkidle")
 
-        # 검색 버튼 클릭 → 입차 차량 목록 (✅ Codegen 확인됨)
-        await page.get_by_role("button", name="검색").click()
+        # 차량번호 입력 후 검색 (✅ HTML 확인됨)
+        await page.locator(sel.CAR_SEARCH_INPUT).fill(req.car_number)
+        await page.locator(sel.SEARCH_BUTTON).click()
         await page.wait_for_load_state("networkidle")
 
-        # ⚠️ TODO: 차량번호로 목록에서 해당 차량 행 찾아서 클릭
-        # 현재는 ArrowDown 반복으로만 이동 가능한지 미확인
-        # 실차 테스트 후 아래 코드 완성 필요
-        #
-        # 예상 구현:
-        # row = page.locator(sel.CAR_LIST_ROW).filter(has_text=req.car_number)
-        # await row.click()
-        raise NotImplementedError(
-            "⚠️ 차량 선택 셀렉터 미확인 — 실차 입차 후 Codegen 재실행 필요"
+        # 검색 결과 없음 확인 (차량 미입차)
+        try:
+            await page.get_by_text(sel.NO_RESULT_MESSAGE).wait_for(timeout=3000)
+            await page.get_by_role("button", name="OK").click()
+            return RegisterResponse(
+                success=False,
+                message=f"차량 미입차: {req.car_number}",
+                car_number=req.car_number,
+                discount_type=req.discount_type,
+            )
+        except Exception:
+            pass  # 검색 결과 있음, 계속 진행
+
+        # dhtmlXGrid에서 차량번호 행 선택 (✅ JS 전역변수: dataSetMst, XgridMst)
+        # 행 값의 모든 필드를 순회하여 차량번호 포함 여부로 찾음
+        row_index = await page.evaluate(
+            """(carNo) => {
+                try {
+                    var normalized = carNo.replace(/\\s/g, '');
+                    for (var i = 0; i < dataSetMst.length; i++) {
+                        var row = dataSetMst[i];
+                        for (var key in row) {
+                            if (String(row[key]).replace(/\\s/g, '').includes(normalized)) {
+                                XgridMst.selectRow(i, true);
+                                return i;
+                            }
+                        }
+                    }
+                } catch(e) {}
+                return -1;
+            }""",
+            req.car_number,
         )
 
-        # ⚠️ TODO: 30분권 / 60분권 선택
-        # if req.discount_type == "30":
-        #     await page.locator(sel.DISCOUNT_30MIN).click()
-        # else:
-        #     await page.locator(sel.DISCOUNT_60MIN).click()
+        if row_index == -1:
+            return RegisterResponse(
+                success=False,
+                message=f"그리드에서 차량 미발견: {req.car_number}",
+                car_number=req.car_number,
+                discount_type=req.discount_type,
+            )
 
-        # ⚠️ TODO: 최종 등록 확인 버튼 클릭
-        # await page.locator(sel.CONFIRM_BTN).click()
-        # await page.wait_for_selector(sel.SUCCESS_MESSAGE)
+        # 행 선택 후 #div_dscntcodes 에 할인 버튼 동적 생성될 때까지 대기
+        await page.locator(sel.DISCOUNT_BTN).first.wait_for(timeout=5000)
+
+        # 할인 시간 버튼 클릭 → fncSetDscntType() → fncSave() 자동 호출 (확인 버튼 없음)
+        # ⚠️ 실차 확인 필요: 버튼 텍스트가 "30" / "60" 포함 여부
+        discount_text = (
+            sel.DISCOUNT_30MIN_TEXT if req.discount_type == "30"
+            else sel.DISCOUNT_60MIN_TEXT
+        )
+        await page.locator(sel.DISCOUNT_BTN).filter(has_text=discount_text).first.click()
+
+        # 성공 모달 대기 (fncAlertMsg → jQuery UI dialog)
+        await page.get_by_text(sel.SUCCESS_MESSAGE).wait_for(timeout=10000)
+        await page.get_by_role("button", name="OK").click()
 
         screenshot_path = await self._take_screenshot(
             page, f"success_{req.car_number}"
