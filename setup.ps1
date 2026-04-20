@@ -36,7 +36,8 @@ if (-not $atsId -or -not $atsPw) {
 Write-Host ""
 Write-Host "[3/6] Creating .env file..."
 $envContent = "ATS_ID=$atsId`r`nATS_PW=$atsPw`r`nATS_URL=https://a00992.pweb.kr`r`nSESSION_PATH=data/storage_state.json`r`nSCREENSHOT_DIR=data/screenshots`r`nAPI_KEY=minus-parking-2024`r`nGSHEET_ID=`r`nGSHEET_CREDS_PATH=data/gsheet_creds.json`r`nSMTP_HOST=smtp.gmail.com`r`nSMTP_PORT=587`r`nSMTP_USER=`r`nSMTP_PASSWORD=`r`nALERT_EMAIL=`r`nCLOUDFLARE_TUNNEL_TOKEN=`r`n"
-[System.IO.File]::WriteAllText("$PWD\.env", $envContent, [System.Text.Encoding]::UTF8)
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText("$PWD\.env", $envContent, $utf8NoBom)
 Write-Host "  OK: .env created"
 
 # Step 4: Create folders
