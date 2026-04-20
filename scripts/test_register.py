@@ -2,14 +2,18 @@
 로컬 Smoke Test — FastAPI 서버 실행 중일 때 사용.
 
 사용법:
-    uvicorn app.main:app --reload   # 터미널1
-    python scripts/test_register.py # 터미널2
+    python -m uvicorn app.main:app --reload  # 터미널1
+    python scripts/test_register.py          # 터미널2
 """
 
+import os
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_URL = "http://localhost:8000"
-API_KEY = "여기에_API_KEY_입력"  # .env의 API_KEY 값
+API_KEY = os.getenv("API_KEY", "")
 
 
 def test_health():
