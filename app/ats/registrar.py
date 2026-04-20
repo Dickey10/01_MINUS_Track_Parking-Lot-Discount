@@ -160,15 +160,15 @@ class ATSRegistrar:
             )
 
         # 행 선택 후 #div_dscntcodes 에 할인 버튼 동적 생성될 때까지 대기
-        await page.locator(sel.DISCOUNT_BTN).first.wait_for(timeout=5000)
-
-        # 할인 시간 버튼 클릭 → fncSetDscntType() → fncSave() 자동 호출 (확인 버튼 없음)
-        # ⚠️ 실차 확인 필요: 버튼 텍스트가 "30" / "60" 포함 여부
-        discount_text = (
-            sel.DISCOUNT_30MIN_TEXT if req.discount_type == "30"
-            else sel.DISCOUNT_60MIN_TEXT
+        # ⚠️ time 속성값이 분 단위(30/60)인지 실차 확인 필요
+        discount_sel = (
+            sel.DISCOUNT_30MIN_SEL if req.discount_type == "30"
+            else sel.DISCOUNT_60MIN_SEL
         )
-        await page.locator(sel.DISCOUNT_BTN).filter(has_text=discount_text).first.click()
+        await page.locator(discount_sel).wait_for(timeout=5000)
+
+        # 버튼 클릭 → fncSetDscntType() → fncSave() 자동 호출 (확인 버튼 없음)
+        await page.locator(discount_sel).click()
 
         # 성공 모달 대기 (fncAlertMsg → jQuery UI dialog)
         await page.get_by_text(sel.SUCCESS_MESSAGE).wait_for(timeout=10000)

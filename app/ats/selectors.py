@@ -20,17 +20,21 @@ SEARCH_BUTTON = "input.btnS1_1"
 # <div id="gridMst" ...>
 CAR_GRID = "#gridMst"
 
-# --- 할인 버튼 (✅ HTML 소스 확인됨) ---
-# 차량 행 선택 후 #div_dscntcodes 에 <a> 버튼 동적 생성됨
-# 버튼 클릭 즉시 fncSave() 자동 호출 → 별도 확인 버튼 없음
-# <td id="div_dscntcodes">
+# --- 할인 버튼 (✅ JS 소스 분석 확인됨) ---
+# 차량 행 선택 후 /discount/registration/getForDiscount API 응답의
+# listDiscountType[] 배열로 fncGetDscntBtn()이 동적 생성
+# 버튼 구조: <a name="btnDscntType" time="{discount_value}" price="{discount_price}">
+# 버튼 클릭 즉시 fncSetDscntType() → fncSave() 자동 호출 → 별도 확인 버튼 없음
 DISCOUNT_CODES_DIV = "#div_dscntcodes"
-DISCOUNT_BTN = "#div_dscntcodes a"
 
-# ⚠️ TODO: 실차 입차 후 실제 할인권 버튼 텍스트 확인 필요
-# (예: "30분", "30분 무료", "30분할인" 등 — 버튼 클릭 후 텍스트 확인)
-DISCOUNT_30MIN_TEXT = "30"   # 30분권 버튼 텍스트 부분 일치
-DISCOUNT_60MIN_TEXT = "60"   # 60분권 버튼 텍스트 부분 일치
+# ✅ attribute 기반 셀렉터 (텍스트보다 안정적)
+# ⚠️ time 속성값이 분 단위(30/60)인지 실차 확인 필요 — discount_value 기준
+DISCOUNT_30MIN_SEL = '#div_dscntcodes a[name="btnDscntType"][time="30"]'
+DISCOUNT_60MIN_SEL = '#div_dscntcodes a[name="btnDscntType"][time="60"]'
+
+# 실차 확인용 JS (버튼 생성 후 DevTools 콘솔 실행):
+# Array.from(document.querySelectorAll('#div_dscntcodes a[name="btnDscntType"]'))
+#   .map(a=>({id:a.id,text:a.textContent.trim(),time:a.getAttribute('time'),price:a.getAttribute('price')}))
 
 # --- 성공/오류 메시지 (✅ HTML 소스 확인됨) ---
 # fncAlertMsg("등록되었습니다.", ...) 호출 결과
