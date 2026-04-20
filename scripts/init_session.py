@@ -17,7 +17,7 @@ SESSION_PATH = Path("data/storage_state.json")
 async def main():
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=False)
-        context = await browser.new_context()
+        context = await browser.new_context(ignore_https_errors=True)
         page = await context.new_page()
 
         print("브라우저가 열렸습니다. ATS에 직접 로그인하세요.")

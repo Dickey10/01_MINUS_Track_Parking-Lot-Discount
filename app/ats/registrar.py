@@ -36,7 +36,7 @@ class ATSRegistrar:
                     Path(settings.session_path)
                 )
 
-            context = await browser.new_context(**ctx_kwargs)
+            context = await browser.new_context(ignore_https_errors=True, **ctx_kwargs)
             page = await context.new_page()
 
             try:
