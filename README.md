@@ -1,2 +1,42 @@
-# 01_MINUS_Track_Parking-Lot-Discount
-MINUS Track Project - Parking Lot Discount
+# MINUS Track 주차 할인권 자동화
+
+## 이 프로그램이 하는 일
+
+직원이 웹페이지에서 차량번호를 입력하면,
+컴퓨터가 자동으로 ATS(주차관제시스템)에 접속해서 할인권을 등록합니다.
+
+---
+
+## 설치 방법 (최초 1회)
+
+### 1. 이 프로그램 다운로드
+
+GitHub에서 ZIP 다운로드 → 원하는 폴더에 압축 해제
+
+### 2. 자동 설치 실행
+
+압축 해제한 폴더 안에서 `setup.ps1` 파일 찾기  
+→ **마우스 우클릭 → PowerShell로 실행**
+
+설치 스크립트가 자동으로 아래를 처리합니다:
+- ATS 아이디/비밀번호 입력 안내
+- .env 설정 파일 자동 생성
+- 필요한 Python 패키지 설치
+- 자동화용 브라우저 설치
+- ATS 로그인 세션 저장
+
+### 3. 서버 실행
+
+PowerShell을 열고 프로젝트 폴더에서:
+
+```
+python -m uvicorn app.main:app --reload
+```
+
+---
+
+## 매일 사용 방법
+
+1. PowerShell에서 서버 실행 (위 명령어)
+2. 직원이 웹페이지 또는 QR코드에서 차량번호 입력
+3. 자동으로 ATS에 할인권 등록 완료
