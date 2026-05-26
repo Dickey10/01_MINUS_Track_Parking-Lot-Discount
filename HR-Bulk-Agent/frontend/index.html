@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>하츠 HR Agent</title>
+  <style>
+    :root { --bg:#f3f5f8; --panel:#fff; --line:#d8dee8; --text:#17202c; --muted:#5f6d7c; --blue:#0b63ce; --ok:#16794c; --warn:#9a6700; --danger:#b3261e; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 "Segoe UI","Malgun Gothic",Arial,sans-serif; }
+    header { height:50px; display:flex; align-items:center; gap:10px; padding:0 14px; background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:2; }
+    .brand { font-weight:700; margin-right:8px; }
+    nav { display:flex; gap:6px; flex:1; }
+    button, .btn { border:1px solid var(--blue); background:var(--blue); color:#fff; border-radius:6px; padding:8px 12px; font:inherit; cursor:pointer; text-decoration:none; display:inline-block; }
+    button.secondary, nav button { background:#fff; color:#1f2937; border-color:var(--line); }
+    nav button.active { border-color:var(--blue); color:var(--blue); }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .userbar { display:flex; gap:8px; align-items:center; color:var(--muted); }
+    main { padding:14px; }
+    .view { display:none; }
+    .view.active { display:block; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .grid3 { display:grid; grid-template-columns:360px 1fr 330px; gap:12px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:12px; }
+    h2 { font-size:16px; margin:0 0 10px; }
+    h3 { font-size:14px; margin:14px 0 8px; color:#334155; }
+    label { display:grid; gap:4px; margin-bottom:9px; color:var(--muted); font-size:13px; }
+    input, select, textarea { width:100%; border:1px solid var(--line); border-radius:6px; padding:8px 9px; font:inherit; background:#fff; color:var(--text); }
+    textarea { min-height:110px; resize:vertical; }
+    table { width:100%; border-collapse:collapse; margin-top:8px; background:#fff; }
+    th,td { border-bottom:1px solid var(--line); padding:8px; text-align:left; vertical-align:top; }
+    th { background:#f0f2f5; font-weight:600; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .status { margin-top:9px; padding:9px; border-radius:6px; border:1px solid var(--line); background:#f8fafc; color:var(--muted); }
+    .status.ok { background:#eefaf3; border-color:#bfe5cf; color:var(--ok); }
+    .status.error { background:#fff1f1; border-color:#efc7c4; color:var(--danger); }
+    .status.warn { background:#fff7df; border-color:#e6c767; color:var(--warn); }
+    .pill { display:inline-block; border-radius:999px; padding:2px 8px; font-size:12px; background:#eef2f7; color:#44546a; }
+    .pill.ok { background:#e8f5ee; color:var(--ok); }
+    .pill.warn { background:#fff4d8; color:var(--warn); }
+    .pill.error { background:#fceeee; color:var(--danger); }
+    .chatlog { height:44vh; overflow:auto; padding:8px; background:#f8fafc; border:1px solid var(--line); border-radius:8px; }
+    .msg { display:grid; grid-template-columns:34px 1fr; gap:8px; margin-bottom:10px; }
+    .msg.user { grid-template-columns:1fr 34px; margin-left:15%; }
+    .msg.user .avatar { grid-column:2; background:#0b63ce; color:#fff; }
+    .msg.user .bubble { grid-column:1; grid-row:1; background:#0b63ce; color:#fff; border-color:#0b63ce; }
+    .avatar { width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:#dfe7f1; font-weight:700; }
+    .bubble { background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px; white-space:pre-wrap; }
+    .draft { border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:8px; background:#fff; }
+    .draft-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:8px 0; }
+    .draft-grid label { margin:0; }
+    .draft-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .tabs { display:flex; border-bottom:1px solid var(--line); margin:-14px -14px 12px; }
+    .tabs button { flex:1; border:0; border-right:1px solid var(--line); border-radius:0; background:#fff; color:#334155; }
+    .tabs button.active { color:var(--blue); border-bottom:2px solid var(--blue); }
+    .subtle { color:var(--muted); font-size:13px; }
+    .hidden { display:none !important; }
+    @media (max-width:1100px){ .grid3,.grid2{grid-template-columns:1fr;} header{height:auto; flex-wrap:wrap; padding:10px;} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">🧭 하츠 HR Agent</div>
+    <nav>
+      <button data-view="events" class="active">인사 이벤트</button>
+      <button data-view="master">직원 마스터</button>
+      <button data-view="promotion">진급 후보</button>
+      <button data-view="settings">설정</button>
+    </nav>
+    <div class="userbar">
+      <span id="userLabel">미로그인</span>
+      <button id="logoutBtn" class="secondary hidden" type="button">로그아웃</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="loginPanel" class="card">
+      <h2>로그인</h2>
+      <div class="grid2">
+        <label>사용자 ID<input id="loginUser" value="admin" /></label>
+        <label>비밀번호<input id="loginPw" type="password" placeholder="초기값: admin123!" /></label>
+      </div>
+      <button id="loginBtn" type="button">로그인</button>
+      <div class="status warn">초기 관리자 계정은 로컬 PC 최초 실행용입니다. 설정 화면에서 즉시 비밀번호를 변경하세요.</div>
+    </section>
+
+    <section id="appPanel" class="hidden">
+      <div id="events" class="view active">
+        <div class="grid3">
+          <div class="card">
+            <h2>입력</h2>
+            <div class="tabs"><button class="active" type="button">챗</button><button type="button">폼</button><button type="button">엑셀</button></div>
+            <label>자연어 입력<textarea id="prompt">6월 1일 입사자 등록해줘. 회사는 하츠.
+사번 260601 홍길동 영업팀 대리 2026-06-01 입사
+연초 승진자 반영 필요: 사번 1001 박민수 영업팀 과장 승진, 사번 1002 이서연 개발팀 차장 승진</textarea></label>
+            <div class="row">
+              <label class="row"><input type="checkbox" name="platform" value="gift24" checked style="width:auto"> 선물24</label>
+              <label class="row"><input type="checkbox" name="platform" value="workd" checked style="width:auto"> 워크드</label>
+              <label class="row"><input type="checkbox" name="platform" value="shiftee" style="width:auto"> 시프티</label>
+            </div>
+            <button id="analyzeBtn" type="button">검증</button>
+            <div id="eventStatus" class="status">자연어 입력은 먼저 직원별 초안으로 분리되고, 누락값만 역질문합니다.</div>
+          </div>
+          <div class="card">
+            <h2>미리보기 · 영향 플랫폼</h2>
+            <div id="chatlog" class="chatlog"></div>
+            <h3>작업 초안 큐</h3>
+            <div id="drafts"></div>
+          </div>
+          <div class="card">
+            <h2>실행 결과</h2>
+            <div id="resultBox" class="status">승인 큐 생성 결과가 여기에 표시됩니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="master" class="view">
+        <div class="card">
+          <h2>마스터 시트 동기화</h2>
+          <p class="subtle">개인정보 보안상 운영 초기에는 Google Sheets 공유 제한 또는 로컬 공유 CSV/XLSX 파일을 기준 마스터로 두고, 이 앱은 필요한 필드만 가져오는 방식을 권장합니다.</p>
+          <div class="row">
+            <input id="masterFile" type="file" accept=".csv" />
+            <button id="importMasterBtn" type="button">CSV 업로드(import)</button>
+            <a class="btn secondary" href="http://127.0.0.1:8011/api/master-employees/template.csv">템플릿 CSV 다운로드</a>
+          </div>
+          <div id="masterImportStatus" class="status">필수 컬럼: employee_id, name, hire_date. 선택: department, position, rank, initial_pay_grade, birth_date, phone, email, status.</div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h2>직원 직접 입력</h2>
+            <div class="grid2">
+              <label>사번<input id="mEmployeeId" /></label>
+              <label>이름<input id="mName" /></label>
+              <label>부서<input id="mDepartment" /></label>
+              <label>직책<input id="mPosition" /></label>
+              <label>직급<input id="mRank" /></label>
+              <label>입사일<input id="mHireDate" type="date" /></label>
+              <label>입사호봉<input id="mInitialGrade" type="number" min="1" value="1" /></label>
+              <label>상태<input id="mStatus" value="active" /></label>
+              <label>생년월일<input id="mBirthDate" type="date" /></label>
+              <label>전화번호<input id="mPhone" /></label>
+              <label>이메일<input id="mEmail" /></label>
+            </div>
+            <button id="saveMasterBtn" type="button">직원 저장</button>
+          </div>
+          <div class="card">
+            <h2>직원 목록</h2>
+            <div class="row"><button id="refreshMasterBtn" type="button">새로고침</button><span id="masterCount" class="subtle"></span></div>
+            <table><thead><tr><th>사번</th><th>이름</th><th>부서</th><th>직급</th><th>입사일</th><th>입사호봉</th><th>상태</th></tr></thead><tbody id="masterRows"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div id="promotion" class="view">
+        <div class="card">
+          <h2>진급 후보</h2>
+          <p class="subtle">현재 로직: 입사호봉 + 만 근속연수 = 현재호봉. 직급별 기준호봉 이상이면 후보로 표시합니다. 규칙은 앱 코드의 `PROMOTION_RULES`에서 조정 가능합니다.</p>
+          <label class="row"><input id="eligibleOnly" type="checkbox" checked style="width:auto"> 자격 충족자만 표시</label>
+          <button id="refreshPromotionBtn" type="button">새로고침</button>
+          <table><thead><tr><th>사번</th><th>이름</th><th>현 직급</th><th>다음 직급</th><th>현재호봉</th><th>필요호봉</th><th>근속</th><th>판정</th><th>사유</th></tr></thead><tbody id="promotionRows"></tbody></table>
+        </div>
+      </div>
+
+      <div id="settings" class="view">
+        <div class="grid2">
+          <div class="card">
+            <h2>LLM(AI) 연결</h2>
+            <p class="subtle">사용자 발화의 의도 추출에만 사용하고, 주민번호/계좌/비밀번호는 전송하지 않는 전제로 구성합니다.</p>
+            <label>Provider<select id="sLlmProvider"><option value="openai">openai</option><option value="anthropic">anthropic</option><option value="ollama">ollama</option></select></label>
+            <label>Model<input id="sLlmModel" value="gpt-5.1" /></label>
+            <label>OpenAI API Key<input id="sOpenaiKey" type="password" placeholder="sk-..." /></label>
+            <label>Anthropic API Key<input id="sAnthropicKey" type="password" placeholder="sk-ant-..." /></label>
+          </div>
+          <div class="card">
+            <h2>내부 프로그램 연동</h2>
+            <label>선물24 client_id<input id="sGiftId" /></label>
+            <label>선물24 client_secret<input id="sGiftSecret" type="password" /></label>
+            <label>워크드 Base URL<input id="sWorkdUrl" /></label>
+            <label>워크드 API Key<input id="sWorkdKey" type="password" /></label>
+            <label>시프티 Base URL<input id="sShifteeUrl" /></label>
+            <label>시프티 API Key<input id="sShifteeKey" type="password" /></label>
+            <label class="row"><input id="sLive" type="checkbox" style="width:auto"> 실제 API 반영 허용</label>
+          </div>
+          <div class="card">
+            <h2>직원 마스터 소스</h2>
+            <label>Google Sheet URL<input id="sGoogleSheet" placeholder="공유 제한된 시트 URL" /></label>
+            <label>로컬 공유 파일 경로<input id="sLocalMaster" placeholder="예: D:\\HR\\employee_master.csv" /></label>
+            <p class="subtle">Google Sheets는 비밀번호 방식보다 Google 계정 공유 제한과 2단계 인증을 권장합니다. 실제 자동 동기화는 서비스 계정/커넥터 승인 후 확장합니다.</p>
+          </div>
+          <div class="card">
+            <h2>사용자 계정/권한</h2>
+            <div class="grid2">
+              <label>ID<input id="aUsername" /></label>
+              <label>표시명<input id="aDisplay" /></label>
+              <label>비밀번호<input id="aPassword" type="password" /></label>
+              <label>역할<select id="aRole"><option value="viewer">viewer</option><option value="hr_manager">hr_manager</option><option value="approver">approver</option><option value="admin">admin</option></select></label>
+            </div>
+            <div class="row">
+              <label class="row"><input id="aCreate" type="checkbox" style="width:auto"> 등록</label>
+              <label class="row"><input id="aUpdate" type="checkbox" style="width:auto"> 수정</label>
+              <label class="row"><input id="aDelete" type="checkbox" style="width:auto"> 삭제</label>
+            </div>
+            <div class="row"><button id="saveSettingsBtn" type="button">설정 저장</button><button id="createAccountBtn" type="button">계정 생성</button></div>
+            <div id="settingsStatus" class="status">API 키/비밀번호는 저장 후 원문을 다시 표시하지 않습니다.</div>
+            <table><thead><tr><th>ID</th><th>표시명</th><th>역할</th><th>권한</th><th>상태</th></tr></thead><tbody id="accountRows"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let token = localStorage.getItem("hrAgentToken") || "";
+    let currentUser = null;
+    const API_BASE = "http://127.0.0.1:8011";
+    const apiHeaders = () => ({ "Content-Type": "application/json", ...(token ? { Authorization:`Bearer ${token}` } : { "X-User-Name":"local-hr", "X-User-Role":"admin" }) });
+    const $ = (id) => document.getElementById(id);
+    const ranks = ["사원","주임","대리","과장","차장","부장","팀장","실장","상무","전무","이사"];
+    const companies = ["하츠","벽산","샐러리파이"];
+
+    async function requestJson(url, options={}) {
+      const res = await fetch(url.startsWith("/api") ? API_BASE + url : url, options);
+      const text = await res.text();
+      const body = text ? JSON.parse(text) : {};
+      if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+      return body;
+    }
+    function setStatus(id, msg, kind="") { $(id).className = `status ${kind}`; $(id).textContent = msg; }
+    function showApp(user) {
+      currentUser = user;
+      $("loginPanel").classList.add("hidden");
+      $("appPanel").classList.remove("hidden");
+      $("logoutBtn").classList.remove("hidden");
+      $("userLabel").textContent = `${user.display_name || user.name || user.username} (${user.role})`;
+      loadMaster(); loadPromotion(); loadSettings(); loadAccounts();
+    }
+    function inferEvent(text){ if(/퇴사|퇴직/.test(text))return"terminate"; if(/복직/.test(text))return"leave_end"; if(/휴직/.test(text))return"leave_start"; if(/승진|진급|승급/.test(text))return"promotion"; if(/조직개편/.test(text))return"org_change"; if(/부서변경|이동|전보/.test(text))return"department_transfer"; return"hire"; }
+    function findDate(text){ let m=text.match(/(20\d{2})[-./년 ]\s*(\d{1,2})[-./월 ]\s*(\d{1,2})/); if(m)return`${m[1]}-${String(+m[2]).padStart(2,"0")}-${String(+m[3]).padStart(2,"0")}`; m=text.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/); if(m)return`${new Date().getFullYear()}-${String(+m[1]).padStart(2,"0")}-${String(+m[2]).padStart(2,"0")}`; return null; }
+    function findOne(text, regex){ const m=text.match(regex); return m ? m[1] : null; }
+    function findName(text){ const explicit=findOne(text,/(?:이름|성명)\s*[:：]?\s*([가-힣]{2,5})/); if(explicit)return explicit; const id=text.match(/(?:사번|ID|id|No\.?)\s*[:：]?\s*([A-Za-z0-9_-]{3,})/); const target=id ? text.slice(id.index + id[0].length).trim() : text; const tokens=target.match(/\b[가-힣]{2,5}\b/g)||[]; const excluded=new Set([...ranks,...companies,"입사","입사자","퇴사","퇴사자","휴직","휴직자","복직","승진","승진자","진급","조직개편","부서변경","회사","회사는","사번"]); return tokens.find(t=>!excluded.has(t)&&!/(팀|부|실|센터|본부|해줘|처리|등록|는)$/.test(t)) || "미확인"; }
+    function splitPrompt(message){ const lines=message.split(/\n+/).map(l=>l.trim().replace(/^[-•]\s*/,"")).filter(Boolean); let parts=[]; for(const line of lines.length?lines:[message]){ const count=(line.match(/사번\s*[A-Za-z0-9_-]+/g)||[]).length; if(count>1)parts.push(...line.split(/(?=사번\s*[A-Za-z0-9_-]+)/).map(p=>p.trim().replace(/^[,，]\s*/,"")).filter(Boolean)); else parts.push(line); } const filtered=parts.filter(p=>/사번\s*[A-Za-z0-9_-]+/.test(p)||findName(p)!=="미확인"); return filtered.length?filtered:parts; }
+    function selectedPlatforms(){ return [...document.querySelectorAll("input[name=platform]:checked")].map(el=>el.value); }
+    function clientAnalyze(message){ const defaultCompany=companies.find(c=>message.includes(c))||null; const defaultDate=findDate(message); const required={hire:["employee_id","name","hire_date","department","rank","company"],terminate:["employee_id","name","termination_date"],leave_start:["employee_id","name","leave_start_date"],leave_end:["employee_id","name","leave_end_date"],promotion:["employee_id","name","rank"],department_transfer:["employee_id","name","department"],org_change:["employee_id","name","department"]}; const labels={employee_id:"사번",name:"이름",hire_date:"입사일",termination_date:"퇴사일",leave_start_date:"휴직 시작일",leave_end_date:"복직일",department:"부서",rank:"직급",company:"회사/법인"}; const drafts=splitPrompt(message).map((text,i)=>{ const eventType=inferEvent(text); const id=findOne(text,/(?:사번|ID|id|No\.?)\s*[:：]?\s*([A-Za-z0-9_-]{3,})/)||`TEMP-${String(i+1).padStart(3,"0")}`; const date=findDate(text)||defaultDate; const employee={employee_id:id,name:findName(text),employment_status:"active",hire_date:eventType==="hire"?date:null,termination_date:eventType==="terminate"?date:null,leave_start_date:eventType==="leave_start"?date:null,leave_end_date:eventType==="leave_end"?date:null,department:findOne(text,/([가-힣A-Za-z0-9]+(?:팀|부|실|센터|본부))/),rank:ranks.find(r=>text.includes(r))||null,title:null,employment_type:null,company:companies.find(c=>text.includes(c))||defaultCompany,email:findOne(text,/([\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/),phone:findOne(text,/(01[016789][-\s]?\d{3,4}[-\s]?\d{4})/)?.replace(/\D/g,"")||null,birth_date:null}; const missing=required[eventType].filter(f=>!employee[f]||employee[f]==="미확인"||String(employee[f]).startsWith("TEMP-")); return {row_number:i+1,confidence:Math.max(.1, +(.9-missing.length*.08).toFixed(2)),source_text:text,change_request:{event_type:eventType,employee,target_platforms:selectedPlatforms(),requested_by:"chat-agent",memo:text},missing_fields:missing,followup_questions:missing.map(f=>`${labels[f]||f} 정보를 알려주세요.`)}; }); return drafts; }
+    function addMsg(role, text){ const el=document.createElement("div"); el.className="msg"; el.innerHTML=`<div class="avatar">${role==="user"?"나":"AI"}</div><div class="bubble"></div>`; el.querySelector(".bubble").textContent=text; $("chatlog").appendChild(el); $("chatlog").scrollTop=$("chatlog").scrollHeight; }
+    function validateDraftPayload(payload){ const e=payload.employee; const required={hire:["employee_id","name","hire_date","department","rank","company"],terminate:["employee_id","name","termination_date"],leave_start:["employee_id","name","leave_start_date"],leave_end:["employee_id","name","leave_end_date"],promotion:["employee_id","name","rank"],department_transfer:["employee_id","name","department"],org_change:["employee_id","name","department"]}; return (required[payload.event_type]||[]).filter(f=>!e[f]||e[f]==="미확인"||String(e[f]).startsWith("TEMP-")); }
+    function draftFromCard(card){ const e={employee_id:card.querySelector("[data-field=employee_id]").value.trim(),name:card.querySelector("[data-field=name]").value.trim(),employment_status:"active",hire_date:card.querySelector("[data-field=hire_date]").value||null,termination_date:null,leave_start_date:null,leave_end_date:null,department:card.querySelector("[data-field=department]").value.trim()||null,rank:card.querySelector("[data-field=rank]").value.trim()||null,title:null,employment_type:null,company:card.querySelector("[data-field=company]").value.trim()||null,email:null,phone:null,birth_date:null}; return {event_type:card.querySelector("[data-field=event_type]").value,employee:e,target_platforms:selectedPlatforms(),requested_by:"chat-agent",memo:card.dataset.source||""}; }
+    function refreshDraftCard(card){ const payload=draftFromCard(card); const missing=validateDraftPayload(payload); const badge=card.querySelector(".draft-badge"); const questions=card.querySelector(".draft-questions"); const createBtn=card.querySelector(".create-draft"); badge.className=`pill draft-badge ${missing.length?"warn":"ok"}`; badge.textContent=missing.length?"추가 확인":"생성 가능"; questions.innerHTML=missing.length?`<ul>${missing.map(f=>`<li>${({employee_id:"사번",name:"이름",hire_date:"입사일",department:"부서",rank:"직급",company:"회사/법인"}[f]||f)} 정보를 알려주세요.</li>`).join("")}</ul>`:""; createBtn.disabled=!!missing.length; }
+    function renderDrafts(items){ $("drafts").innerHTML=`<div class="row" style="margin-bottom:8px;"><button id="clearDraftsBtn" class="secondary" type="button">내용 초기화</button><button id="refreshDraftsBtn" class="secondary" type="button">수정 반영</button><button id="createAllDraftsBtn" type="button">생성 가능 항목 일괄 생성</button></div>`; for(const item of items){ const e=item.change_request.employee; const valid=!item.missing_fields.length; const div=document.createElement("div"); div.className="draft"; div.dataset.source=item.source_text||""; div.innerHTML=`<b>#${item.row_number}</b> <span class="pill draft-badge ${valid?"ok":"warn"}">${valid?"생성 가능":"추가 확인"}</span><div class="draft-grid"><label>유형<select data-field="event_type"><option value="hire">hire</option><option value="promotion">promotion</option><option value="terminate">terminate</option><option value="department_transfer">department_transfer</option><option value="org_change">org_change</option></select></label><label>사번<input data-field="employee_id" value="${e.employee_id||""}"></label><label>이름<input data-field="name" value="${e.name==="미확인"?"":e.name||""}"></label><label>회사<input data-field="company" value="${e.company||""}"></label><label>부서<input data-field="department" value="${e.department||""}"></label><label>직급<input data-field="rank" value="${e.rank||""}"></label><label>입사일<input data-field="hire_date" type="date" value="${e.hire_date||""}"></label></div><div class="draft-questions">${item.followup_questions.length?`<ul>${item.followup_questions.map(q=>`<li>${q}</li>`).join("")}</ul>`:""}</div><div class="draft-actions"><button class="secondary apply-draft" type="button">수정 반영</button><button class="create-draft" ${valid?"":"disabled"} type="button">승인 큐에 생성</button><button class="secondary clear-one" type="button">초안 삭제</button></div>`; div.querySelector("[data-field=event_type]").value=item.change_request.event_type; $("drafts").appendChild(div); refreshDraftCard(div); } document.querySelectorAll(".draft input,.draft select").forEach(el=>el.addEventListener("input",()=>refreshDraftCard(el.closest(".draft")))); document.querySelectorAll(".apply-draft").forEach(btn=>btn.onclick=()=>{ refreshDraftCard(btn.closest(".draft")); setStatus("eventStatus","수정 내용을 초안에 반영했습니다.","ok"); }); document.querySelectorAll(".clear-one").forEach(btn=>btn.onclick=()=>btn.closest(".draft").remove()); document.querySelectorAll(".create-draft").forEach(btn=>btn.onclick=async()=>{ const card=btn.closest(".draft"); refreshDraftCard(card); if(btn.disabled)return; try{ const created=await requestJson("/api/change-requests",{method:"POST",headers:apiHeaders(),body:JSON.stringify(draftFromCard(card))}); $("resultBox").textContent=`변경 요청 #${created.id} 생성 완료`; $("resultBox").className="status ok"; }catch(e){ setStatus("resultBox",e.message,"error"); }}); $("clearDraftsBtn").onclick=()=>{ $("drafts").innerHTML=""; setStatus("eventStatus","작업 초안 큐를 초기화했습니다.","ok"); }; $("refreshDraftsBtn").onclick=()=>{ document.querySelectorAll(".draft").forEach(refreshDraftCard); setStatus("eventStatus","모든 초안의 수정 내용을 반영했습니다.","ok"); }; $("createAllDraftsBtn").onclick=async()=>{ const cards=[...document.querySelectorAll(".draft")]; let ok=0; for(const card of cards){ refreshDraftCard(card); const btn=card.querySelector(".create-draft"); if(btn.disabled)continue; const created=await requestJson("/api/change-requests",{method:"POST",headers:apiHeaders(),body:JSON.stringify(draftFromCard(card))}); ok++; } $("resultBox").textContent=`생성 가능 항목 ${ok}건을 승인 큐에 생성했습니다.`; $("resultBox").className="status ok"; }; }
+
+    async function loadMaster(){ try{ const rows=await requestJson("/api/master-employees",{headers:apiHeaders()}); $("masterCount").textContent=`총 ${rows.length}명`; $("masterRows").innerHTML=rows.map(r=>`<tr><td>${r.employee_id}</td><td>${r.name}</td><td>${r.department||""}</td><td>${r.rank||""}</td><td>${r.hire_date}</td><td>${r.initial_pay_grade}</td><td>${r.status}</td></tr>`).join("") || `<tr><td colspan="7">직원 데이터 없음</td></tr>`; }catch(e){ setStatus("masterImportStatus",e.message,"error"); }}
+    async function loadPromotion(){ try{ const rows=await requestJson(`/api/promotion-candidates?eligible_only=${$("eligibleOnly").checked}`,{headers:apiHeaders()}); $("promotionRows").innerHTML=rows.map(r=>`<tr><td>${r.employee_id}</td><td>${r.name}</td><td>${r.rank||""}</td><td>${r.next_rank||""}</td><td>${r.current_pay_grade}</td><td>${r.required_pay_grade===999?"-":r.required_pay_grade}</td><td>${r.years_of_service}년</td><td><span class="pill ${r.eligible?"ok":"warn"}">${r.eligible?"후보":"제외"}</span></td><td>${r.reason}</td></tr>`).join("") || `<tr><td colspan="9">대상자 없음</td></tr>`; }catch(e){ alert(e.message); }}
+    async function loadSettings(){ try{ const s=await requestJson("/api/settings",{headers:apiHeaders()}); const v=s.values||{}; $("sLlmProvider").value=v.llm_provider||"openai"; $("sLlmModel").value=v.llm_model||"gpt-5.1"; $("sWorkdUrl").value=v.workd_base_url||""; $("sShifteeUrl").value=v.shiftee_base_url||""; $("sGoogleSheet").value=v.google_sheet_url||""; $("sLocalMaster").value=v.local_master_path||""; $("sLive").checked=v.allow_live_connectors==="true"; }catch(e){ setStatus("settingsStatus",e.message,"error"); }}
+    async function loadAccounts(){ try{ const rows=await requestJson("/api/accounts",{headers:apiHeaders()}); $("accountRows").innerHTML=rows.map(a=>`<tr><td>${a.username}</td><td>${a.display_name}</td><td>${a.role}</td><td>${a.can_create?"등록 ":""}${a.can_update?"수정 ":""}${a.can_delete?"삭제":""}</td><td>${a.is_active?"활성":"중지"}</td></tr>`).join(""); }catch(e){ $("accountRows").innerHTML=`<tr><td colspan="5">${e.message}</td></tr>`; }}
+
+    document.querySelectorAll("nav button").forEach(btn=>btn.onclick=()=>{ document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); document.querySelectorAll(".view").forEach(v=>v.classList.remove("active")); $(btn.dataset.view).classList.add("active"); if(btn.dataset.view==="master")loadMaster(); if(btn.dataset.view==="promotion")loadPromotion(); if(btn.dataset.view==="settings"){loadSettings();loadAccounts();} });
+    $("loginBtn").onclick=async()=>{ try{ const r=await requestJson("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:$("loginUser").value,password:$("loginPw").value})}); token=r.token; localStorage.setItem("hrAgentToken",token); showApp(r.user); }catch(e){ alert(e.message); }};
+    $("logoutBtn").onclick=()=>{ localStorage.removeItem("hrAgentToken"); location.reload(); };
+    $("analyzeBtn").onclick=()=>{ const msg=$("prompt").value.trim(); addMsg("user",msg); const items=clientAnalyze(msg); addMsg("assistant",`${items.length}건의 변경 후보를 추출했습니다.\n누락값이 있는 항목은 오른쪽 초안에서 확인하세요.`); renderDrafts(items); setStatus("eventStatus","검증 완료","ok"); };
+    $("saveMasterBtn").onclick=async()=>{ try{ const payload={employee_id:$("mEmployeeId").value,name:$("mName").value,department:$("mDepartment").value||null,position:$("mPosition").value||null,rank:$("mRank").value||null,hire_date:$("mHireDate").value,initial_pay_grade:+$("mInitialGrade").value||1,birth_date:$("mBirthDate").value||null,phone:$("mPhone").value||null,email:$("mEmail").value||null,status:$("mStatus").value||"active"}; await requestJson("/api/master-employees",{method:"POST",headers:apiHeaders(),body:JSON.stringify(payload)}); await loadMaster(); await loadPromotion(); setStatus("masterImportStatus","직원 저장 완료","ok"); }catch(e){ setStatus("masterImportStatus",e.message,"error"); }};
+    $("importMasterBtn").onclick=async()=>{ try{ const file=$("masterFile").files[0]; if(!file) throw new Error("파일을 선택하세요."); const fd=new FormData(); fd.append("file",file); const r=await fetch(API_BASE + "/api/master-employees/import-csv",{method:"POST",headers:token?{Authorization:`Bearer ${token}`}:{},body:fd}); const body=await r.json(); if(!r.ok) throw new Error(body.detail||`HTTP ${r.status}`); setStatus("masterImportStatus",`${body.count}건 가져오기 완료`,"ok"); await loadMaster(); await loadPromotion(); }catch(e){ setStatus("masterImportStatus",e.message,"error"); }};
+    $("refreshMasterBtn").onclick=loadMaster; $("refreshPromotionBtn").onclick=loadPromotion; $("eligibleOnly").onchange=loadPromotion;
+    $("saveSettingsBtn").onclick=async()=>{ try{ const payload={llm_provider:$("sLlmProvider").value,llm_model:$("sLlmModel").value,openai_api_key:$("sOpenaiKey").value||null,anthropic_api_key:$("sAnthropicKey").value||null,gift24_client_id:$("sGiftId").value||null,gift24_client_secret:$("sGiftSecret").value||null,workd_base_url:$("sWorkdUrl").value||null,workd_api_key:$("sWorkdKey").value||null,shiftee_base_url:$("sShifteeUrl").value||null,shiftee_api_key:$("sShifteeKey").value||null,google_sheet_url:$("sGoogleSheet").value||null,local_master_path:$("sLocalMaster").value||null,allow_live_connectors:$("sLive").checked}; await requestJson("/api/settings",{method:"POST",headers:apiHeaders(),body:JSON.stringify(payload)}); setStatus("settingsStatus","설정 저장 완료. 키 원문은 다시 표시하지 않습니다.","ok"); }catch(e){ setStatus("settingsStatus",e.message,"error"); }};
+    $("createAccountBtn").onclick=async()=>{ try{ const payload={username:$("aUsername").value,display_name:$("aDisplay").value,password:$("aPassword").value,role:$("aRole").value,can_create:$("aCreate").checked,can_update:$("aUpdate").checked,can_delete:$("aDelete").checked,is_active:true}; await requestJson("/api/accounts",{method:"POST",headers:apiHeaders(),body:JSON.stringify(payload)}); setStatus("settingsStatus","계정 생성 완료","ok"); loadAccounts(); }catch(e){ setStatus("settingsStatus",e.message,"error"); }};
+    addMsg("assistant","인사 이벤트를 자연어로 입력하면 직원별 초안과 역질문을 만들겠습니다.");
+    (async()=>{ if(token){ try{ const user=await requestJson("/api/auth/me",{headers:apiHeaders()}); showApp(user); }catch{ localStorage.removeItem("hrAgentToken"); } } })();
+  </script>
+</body>
+</html>

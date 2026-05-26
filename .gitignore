@@ -1,0 +1,8 @@
+.env
+data/storage_state.json
+data/gsheet_creds.json
+data/screenshots/
+data/*.db
+__pycache__/
+*.pyc
+.venv/

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>주차 할인권 신청</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 40px auto; padding: 0 16px; }
+    h1 { font-size: 1.4rem; margin-bottom: 24px; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, select { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+    button { margin-top: 20px; width: 100%; padding: 12px; background: #2563eb; color: #fff;
+             border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+    #result { margin-top: 16px; padding: 12px; border-radius: 6px; display: none; }
+    .success { background: #dcfce7; color: #166534; }
+    .error   { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <h1>🚗 주차 할인권 신청</h1>
+  <form id="form">
+    <label>차량번호</label>
+    <input type="text" id="car_number" placeholder="예: 12가3456" required />
+
+    <label>할인 시간</label>
+    <select id="discount_type">
+      <option value="30">30분</option>
+      <option value="60">60분</option>
+    </select>
+
+    <label>부서</label>
+    <input type="text" id="dept" placeholder="예: 영업전략팀" />
+
+    <label>신청자</label>
+    <input type="text" id="requester" placeholder="이름" />
+
+    <label>방문 사유</label>
+    <input type="text" id="reason" placeholder="예: 업무 방문" />
+
+    <button type="submit">할인권 등록</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    // ⚠️ TODO: Cloudflare Named Tunnel 설정 후 실제 URL로 교체
+    const API_URL = "https://TODO.trycloudflare.com/register";
+    const API_KEY = "여기에_API_KEY";  // .env의 API_KEY 값
+
+    document.getElementById("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const resultEl = document.getElementById("result");
+      resultEl.style.display = "none";
+
+      const payload = {
+        car_number: document.getElementById("car_number").value.trim(),
+        discount_type: document.getElementById("discount_type").value,
+        dept: document.getElementById("dept").value.trim(),
+        requester: document.getElementById("requester").value.trim(),
+        reason: document.getElementById("reason").value.trim(),
+      };
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        resultEl.className = data.success ? "success" : "error";
+        resultEl.textContent = data.success
+          ? `✅ ${data.car_number} — ${data.discount_type}분권 등록 완료`
+          : `❌ 실패: ${data.message}`;
+      } catch (err) {
+        resultEl.className = "error";
+        resultEl.textContent = `❌ 서버 연결 오류: ${err.message}`;
+      }
+      resultEl.style.display = "block";
+    });
+
+    // URL 파라미터로 부서 자동 입력 (QR 코드용)
+    const params = new URLSearchParams(location.search);
+    if (params.get("dept")) {
+      document.getElementById("dept").value = params.get("dept");
+    }
+  </script>
+</body>
+</html>
